@@ -1,19 +1,18 @@
 {% extends "admin/feincms/item_editor.html" %}
-{% load i18n reversion_admin %}
+{% load i18n %}
 
 
-{% block extrahead %}{{block.super|fix_jsi18n}}{% endblock %}
-
+{% block object_tools %}{% endblock %}
 
 {% block breadcrumbs %}
-        <div class="breadcrumbs">
-                <a href="{% url admin:index %}">{% trans "Home" %}</a> &rsaquo;
-                <a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a> &rsaquo;
-                <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
-                <a href="{{change_url}}">{{original|truncatewords:"18"}}</a> &rsaquo;
-                <a href="../">{% trans "History" %}</a> &rsaquo;
-                {% blocktrans with opts.verbose_name as verbose_name %}Revert {{verbose_name}}{% endblocktrans %}
-        </div>
+        <ul id="breadcrumbs">
+                <li><a href="{% url admin:index %}">{% trans "Home" %}</a></li>
+                <li><a href="{% url admin:app_list app_label %}">{{app_label|capfirst|escape}}</a></li>
+                <li><a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a></li>
+                <li><a href="{{change_url}}">{{original|truncatewords:"18"}}</a></li>
+                <li><a href="../">{% trans "History" %}</a></li>
+                <li>{% blocktrans with opts.verbose_name as verbose_name %}Revert {{verbose_name}}{% endblocktrans %}</li>
+        </ul>
 {% endblock %}
 
 
@@ -25,6 +24,6 @@
 
 
 {% block form_top %}
-        <p>{% blocktrans %}Press the save button below to revert to this version of the object.{% endblocktrans %}</p>
+        <p>{% blocktrans %}Press the save button below to revert to this version of the object.{% endblocktrans %}</p><br/>
 {% endblock %}
 

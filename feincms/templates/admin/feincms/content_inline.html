@@ -1,80 +1,110 @@
-{% load i18n adminmedia feincms_admin_tags %}
-<div class="inline-group feincms_inline" id="{{ inline_admin_formset.formset.prefix }}-group">
-  <h2>{{ inline_admin_formset.opts.verbose_name_plural|title }}</h2>
+{% load url from future %}
+{% load i18n adminmedia feincms_admin_tags grp_tags %}
+<div class="group stacked {% if inline_admin_formset.opts.classes %} {{ inline_admin_formset.opts.classes|join:" " }}{% endif %}" id="{{ inline_admin_formset.formset.prefix }}-group">
+    <h2 class="collapse-handler">{% if inline_admin_formset.opts.title %}{{ inline_admin_formset.opts.title }}{% else %}{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}{% endif %}</h2>
+    <ul class="tools">
+        <li class="open-handler-container"><a href="javascript://" class="icon open-handler" title="{% trans 'Open All Items' %}"></a></li>
+        <li class="close-handler-container"><a href="javascript://" class="icon close-handler" title="{% trans 'Close All Items' %}"></a></li>
+        <li class="add-handler-container"><a href="javascript://" class="icon add-handler" title="{% trans 'Add Item' %}"> </a></li>
+    </ul>
 {{ inline_admin_formset.formset.management_form }}
 {{ inline_admin_formset.formset.non_form_errors }}
-
-{% for inline_admin_form in inline_admin_formset %}<div class="inline-related{% if forloop.last %} empty-form last-related{% endif %}" id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
-  <h3><b>{{ inline_admin_formset.opts.verbose_name|title }}:</b>&nbsp;<span class="inline_label">{% if inline_admin_form.original %}{{ inline_admin_form.original }}{% else %}#{{ forloop.counter }}{% endif %}</span>
-    {% if inline_admin_form.show_url %}<a href="../../../r/{{ inline_admin_form.original_content_type_id }}/{{ inline_admin_form.original.id }}/">{% trans "View on site" %}</a>{% endif %}
-    {% if inline_admin_formset.formset.can_delete and inline_admin_form.original %}<span class="delete">{{ inline_admin_form.deletion_field.field }} {{ inline_admin_form.deletion_field.label_tag }}</span>{% endif %}
-  </h3>
-  {% if inline_admin_form.form.non_field_errors %}{{ inline_admin_form.form.non_field_errors }}{% endif %}
-  {% for fieldset in inline_admin_form %}
-    <fieldset class="module aligned {{ fieldset.classes }}">
-        {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
-        {% if fieldset.description %}
-            <div class="description">{{ fieldset.description|safe }}</div>
-        {% endif %}
-        {% for line in fieldset|post_process_fieldsets %}
-            <div class="form-row{% if line.errors %} errors{% endif %}{% for field in line %} {{ field.field.name }}{% endfor %}">
-                {{ line.errors }}
-                {% for field in line %}
-                    <div{% if not line.fields|length_is:"1" %} class="field-box"{% endif %}>
-                        {% if field.is_checkbox %}
-                            {{ field.field }}{{ field.label_tag }}
-                        {% else %}
-                            {{ field.label_tag }}
-                            {% if field.is_readonly %}
-                                <p>{{ field.contents }}</p>
+<!-- container -->
+<div class="feincms_inline items">
+    {% with inline_admin_formset.opts.sortable_field_name|default:"" as sortable_field_name %}
+    {% for inline_admin_form in inline_admin_formset|formsetsort:sortable_field_name %}
+    <div class="inline-related module {{ inline_admin_formset.opts.inline_classes|join:" "|default:"open" }}{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last %} empty-form{% endif %}" id="{{ inline_admin_formset.formset.prefix }}{% if forloop.last %}-empty{% else %}{{ forloop.counter0 }}{% endif %}">
+      <h3 class="collapse-handler">
+          {{ inline_admin_formset.opts.verbose_name|title }}:&nbsp;
+          <span class="inline_label">{% if inline_admin_form.original %}{{ inline_admin_form.original }}{% else %}#{{ forloop.counter }}{% endif %}</span>
+      </h3>
+      <ul class="tools">
+          {% if inline_admin_form.show_url %}<li class="viewsite-link-container"><a href="../../../r/{{ inline_admin_form.original_content_type_id }}/{{ inline_admin_form.original.id }}/" class="icon viewsite-link" title="{% trans 'View on site' %}" target="_blank"></a></li>{% endif %}
+          {% if inline_admin_formset.opts.sortable_field_name %}
+              <li class="drag-handler-container"><a href="javascript://" class="icon drag-handler" title="{% trans 'Move Item' %}"></a></li>
+          {% endif %}
+          {% if inline_admin_formset.formset.can_delete %}
+              {% if inline_admin_form.original %}
+                  <li class="delete-handler-container">{{ inline_admin_form.deletion_field.field }}<a href="javascript://" class="icon delete-handler" title="{% trans 'Delete Item' %}"></a></li>
+              {% else %}
+                  <li class="remove-handler-container">{{ inline_admin_form.deletion_field.field }}<a href="javascript://" class="icon remove-handler" title="{% trans 'Delete Item' %}"></a></li>
+              {% endif %}
+          {% endif %}
+      </ul>
+      {% if inline_admin_form.form.non_field_errors %}
+          <ul class="errorlist">
+              <li>{{ inline_admin_form.form.non_field_errors }}</li>
+          </ul>
+      {% endif %}
+      {% for fieldset in inline_admin_form %}
+        <fieldset class="module aligned {{ fieldset.classes }}">
+            {% if fieldset.name %}<h4 class="collapse-handler">{{ fieldset.name }}</h4>{% endif %}
+            {% if fieldset.description %}
+                <div class="description">{{ fieldset.description|safe }}</div>
+            {% endif %}
+            {% for line in fieldset|post_process_fieldsets %}
+                <div class="row cells-{{ line.fields|length }}{% if not line.fields|length_is:"1" %} cells{% else %}{% if line.errors %} errors{% endif %}{% endif %}{% for field in line %} {{ field.field.name }}{% endfor %} ">
+                    {% for field in line %}
+                        <div{% if not line.fields|length_is:"1" %} class="cell {{ field.field.name }}{% if field.field.errors %} error{% endif %}"{% endif %}>
+                            {% if field.is_checkbox %}
+                                <div class="column span-4">&nbsp;</div>
+                                <div class="column span-flexible">
+                                    {{ field.field }}{{ field.label_tag }}
                             {% else %}
-                                {{ field.field }}
+                                {% if field.field.label %}
+                                <div class="column span-4">{{ field.label_tag }}</div>
+                                {% endif %}
+                                <div class="column span-flexible">
+                                    {% if field.is_readonly %}
+                                        <p class="readonly">{{ field.contents }}</p>
+                                    {% else %}
+                                        {{ field.field }}
+                                    {% endif %}
                             {% endif %}
-                        {% endif %}
-                        {% if field.field.field.help_text %}
-                            <p class="help">{{ field.field.field.help_text|safe }}</p>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endfor %}
-    </fieldset>
-  {% endfor %}
-  {% if inline_admin_form.has_auto_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
-  {{ inline_admin_form.fk_field.field }}
-</div>{% endfor %}
+                                {% if line.fields|length_is:'1' %}{{ line.errors }}{% endif %}
+                                {% if not line.fields|length_is:'1' and not field.is_readonly %}{{ field.field.errors }}{% endif %}
+                                {% if field.field.field.help_text %}
+                                    <p class="help">{{ field.field.field.help_text|safe }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </fieldset>
+      {% endfor %}
+      {% if inline_admin_form.has_auto_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
+      {{ inline_admin_form.fk_field.field }}
+    </div>
+    {% endfor %}
+    {% endwith %}
+</div>
+<div class="module add-item">
+    <a href="javascript://" class="add-handler">{% blocktrans with inline_admin_formset.opts.verbose_name|title as verbose_name %}Add another {{ verbose_name }}{% endblocktrans %}</a>
+    <ul class="tools">
+        <li class="add-handler-container"><a href="javascript://" class="icon add-handler" title="{% trans 'Add Item' %}"> </a></li>
+    </ul><br clear="all" />
+</div>
 </div>
 
 <script type="text/javascript">
 (function($) {
     $(document).ready(function() {
+        var prefix = "{{ inline_admin_formset.formset.prefix }}";
+        var related_lookup_fields_fk = {% get_related_lookup_fields_fk inline_admin_formset.opts %};
+        var related_lookup_fields_m2m = {% get_related_lookup_fields_m2m inline_admin_formset.opts %};
+        var related_lookup_fields_generic = {% get_related_lookup_fields_generic inline_admin_formset.opts %};
+        var autocomplete_fields_fk = {% get_autocomplete_lookup_fields_fk inline_admin_formset.opts %};
+        var autocomplete_fields_m2m = {% get_autocomplete_lookup_fields_m2m inline_admin_formset.opts %};
+        var autocomplete_fields_generic = {% get_autocomplete_lookup_fields_generic inline_admin_formset.opts %};
+        
         var rows = "#{{ inline_admin_formset.formset.prefix }}-group .inline-related";
         var updateInlineLabel = function(row) {
             $(rows).find(".inline_label").each(function(i) {
                 var count = i + 1;
                 $(this).html($(this).html().replace(/(#\d+)/g, "#" + count));
             });
-        }
-        var reinitDateTimeShortCuts = function() {
-            // Reinitialize the calendar and clock widgets by force, yuck.
-            if (typeof DateTimeShortcuts != "undefined") {
-                $(".datetimeshortcuts").remove();
-                DateTimeShortcuts.init();
-            }
-        }
-        var updateSelectFilter = function() {
-            // If any SelectFilter widgets were added, instantiate a new instance.
-            if (typeof SelectFilter != "undefined"){
-                $(".selectfilter").each(function(index, value){
-                  var namearr = value.name.split('-');
-                  SelectFilter.init(value.id, namearr[namearr.length-1], false, "{% admin_media_prefix %}");
-                })
-                $(".selectfilterstacked").each(function(index, value){
-                  var namearr = value.name.split('-');
-                  SelectFilter.init(value.id, namearr[namearr.length-1], true, "{% admin_media_prefix %}");
-                })
-            }
-        }
+        };
         var initPrepopulatedFields = function(row) {
             row.find('.prepopulated_field').each(function() {
                 var field = $(this);
@@ -85,22 +115,114 @@
                     input.prepopulate(dependencies, input.attr('maxlength'));
                 }
             });
-        }
-        $(rows).formset({
+        };
+        $("#{{ inline_admin_formset.formset.prefix }}-group").find('input[type="hidden"]').parents('.row').each(function(i, row) {
+            $(row).addClass('hidden');
+        });
+        $("#{{ inline_admin_formset.formset.prefix }}-group").grp_inline({
             prefix: "{{ inline_admin_formset.formset.prefix }}",
             addText: "{% blocktrans with inline_admin_formset.opts.verbose_name|title as verbose_name %}Add another {{ verbose_name }}{% endblocktrans %}",
-            formCssClass: "dynamic-{{ inline_admin_formset.formset.prefix }}",
-            deleteCssClass: "inline-deletelink",
+            formCssClass: "dynamic-form dynamic-{{ inline_admin_formset.formset.prefix }}",
+            deleteCssClass: "delete-handler inline-deletelink",
             deleteText: "{% trans "Remove" %}",
             emptyCssClass: "empty-form",
-            removed: updateInlineLabel,
-            added: (function(row) {
-                initPrepopulatedFields(row);
-                reinitDateTimeShortCuts();
-                updateSelectFilter();
-                updateInlineLabel(row);
-            })
+            onAfterRemoved: updateInlineLabel,
+            onAfterAdded: function(form) {
+                initPrepopulatedFields(form);
+                grappelli.reinitDateTimeFields(form);
+                grappelli.updateSelectFilter(form);
+                $.each(related_lookup_fields_fk, function() {
+                    form.find("input[name^='" + prefix + "'][name$='" + this + "']")
+                    .grp_related_fk({lookup_url:"{% url 'grp_related_lookup' %}"});
+                });
+                $.each(related_lookup_fields_m2m, function() {
+                    form.find("input[name^='" + prefix + "'][name$='" + this + "']")
+                    .grp_related_m2m({lookup_url:"{% url 'grp_m2m_lookup' %}"});
+                });
+                $.each(related_lookup_fields_generic, function() {
+                    var content_type = this[0],
+                        object_id = this[1];
+                    form.find("input[name^='" + prefix + "'][name$='" + this[1] + "']")
+                    .each(function() {
+                        var i = $(this).attr("id").match(/-\d+-/);
+                        if (i) {
+                            var ct_id = "#id_" + prefix + i[0] + content_type,
+                                obj_id = "#id_" + prefix + i[0] + object_id;
+                            $(this).grp_related_generic({content_type:ct_id, object_id:obj_id, lookup_url:"{% url 'grp_related_lookup' %}"});
+                        }
+                    });
+                });
+                $.each(autocomplete_fields_fk, function() {
+                    form.find("input[name^='" + prefix + "'][name$='" + this + "']")
+                    .each(function() {
+                        $(this).grp_autocomplete_fk({
+                            lookup_url:"{% url 'grp_related_lookup' %}",
+                            autocomplete_lookup_url:"{% url 'grp_autocomplete_lookup' %}"
+                        });
+                    });
+                });
+                $.each(autocomplete_fields_m2m, function() {
+                    form.find("input[name^='" + prefix + "'][name$='" + this + "']")
+                    .each(function() {
+                        $(this).grp_autocomplete_m2m({
+                            lookup_url:"{% url 'grp_m2m_lookup' %}",
+                            autocomplete_lookup_url:"{% url 'grp_autocomplete_lookup' %}"
+                        });
+                    });
+                });
+                $.each(autocomplete_fields_generic, function() {
+                    var content_type = this[0],
+                        object_id = this[1];
+                    form.find("input[name^='" + prefix + "'][name$='" + this[1] + "']")
+                    .each(function() {
+                        var i = $(this).attr("id").match(/-\d+-/);
+                        if (i) {
+                            var ct_id = "#id_" + prefix + i[0] + content_type,
+                                obj_id = "#id_" + prefix + i[0] + object_id;
+                            $(this).grp_autocomplete_generic({
+                                content_type:ct_id,
+                                object_id:obj_id,
+                                lookup_url:"{% url 'grp_related_lookup' %}",
+                                autocomplete_lookup_url:"{% url 'grp_autocomplete_lookup' %}"
+                            });
+                        }
+                    });
+                });
+                form.grp_collapsible();
+                form.find(".collapse").grp_collapsible();
+                updateInlineLabel(form);
+            }
         });
+        
+        {% if inline_admin_formset.opts.sortable_field_name %}
+        $("#{{ inline_admin_formset.formset.prefix }}-group > div.items").sortable({
+            handle: "a.drag-handler",
+            items: "div.dynamic-form",
+            axis: "y",
+            appendTo: 'body',
+            forceHelperSize: true,
+            placeholder: 'ui-sortable-placeholder',
+            forcePlaceholderSize: true,
+            containment: '#{{ inline_admin_formset.formset.prefix }}-group > div.items',
+            tolerance: 'pointer',
+            start: function(evt, ui) {
+                ui.placeholder.height(ui.item.height() + 12);
+            },
+        });
+        $("#{{ opts.module_name }}_form").bind("submit", function(){
+            var sortable_field_name = "{{ inline_admin_formset.opts.sortable_field_name }}";
+            var i = 0;
+            $("#{{ inline_admin_formset.formset.prefix }}-group").find("div.dynamic-form").each(function(){
+                var fields = $(this).find("fieldset :input[value]");
+                if (fields.serialize()) {
+                    $(this).find("input[name$='"+sortable_field_name+"']").val(i);
+                    i++;
+                }
+            });
+        });
+        {% endif %}
+        
     });
+    // $("#{{ inline_admin_formset.formset.prefix }}-group").hide();
 })(django.jQuery);
 </script>

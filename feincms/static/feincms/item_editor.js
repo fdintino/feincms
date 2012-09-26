@@ -1,4 +1,4 @@
-if(!Array.indexOf) {
+if(!Array.prototype.indexOf) {
     Array.prototype.indexOf = function(obj) {
         for(var i=0; i<this.length; i++) {
             if(this[i]==obj) {
@@ -179,39 +179,40 @@ if(!Array.indexOf) {
         // for some unknown reason, the add-button click handler function
         // fails on the first triggerHandler call in some rare cases;
         // we can detect this here and retry:
-        for(var i = 0; i < 2; i++){
+        for(var i = 0; i < 1; i++){
             // Use Django's built-in inline spawing mechanism (Django 1.2+)
             // must use django.jQuery since the bound function lives there:
             var returned = django.jQuery('#'+modvar+'_set-group').find(
-                'div.add-row > a').triggerHandler('click');
+                'div.add-item > a').triggerHandler('click');
             if(returned==false) break; // correct return value
         }
         var new_form_count = parseInt($('#id_'+modvar+'_set-TOTAL_FORMS').val(), 10);
         if(new_form_count > old_form_count){
-            return $('#'+modvar+'_set-'+(new_form_count-1));
+            return $('#'+modvar+'_set'+(new_form_count-1));
         }
     }
 
     function set_item_field_value(item, field, value) {
         // item: DOM object for the item's fieldset.
         // field: "order-field" | "delete-field" | "region-choice-field"
-        if (field=="delete-field")
+        if (field=="delete-field") {
             item.find("."+field).attr("checked",value);
-        else if (field=="region-choice-field") {
+        } else if (field=="region-choice-field") {
             var old_region_id = REGION_MAP.indexOf(item.find("."+field).val());
             item.find("."+field).val(REGION_MAP[value]);
 
-            old_region_item = $("#"+REGION_MAP[old_region_id]+"_body");
+            var old_region_item = $("#"+REGION_MAP[old_region_id]+"_body");
             if (old_region_item.children("div.order-machine").children().length == 0)
                 old_region_item.children("div.empty-machine-msg").show();
             else
                 old_region_item.children("div.empty-machine-msg").hide();
 
-            new_region_item = $("#"+REGION_MAP[value]+"_body");
+            var new_region_item = $("#"+REGION_MAP[value]+"_body");
             new_region_item.children("div.empty-machine-msg").hide();
         }
-        else
+        else {
             item.find("."+field).val(value);
+          }
     }
 
     function move_item(region_id, item) {
@@ -330,6 +331,12 @@ if(!Array.indexOf) {
                 $select.hide().next().hide();
             }
         });
+        var $panels = $('#main > .panel');
+        if ($panels && $panels.length) {
+            var $panel = $($panels[0]);
+            $panel.addClass('active');
+            
+        }
     }
 
     // global variable holding the current template key
@@ -522,6 +529,7 @@ if(!Array.indexOf) {
 
         // hide now-empty formsets
         $('div.feincms_inline').hide();
+        $('.group.stacked').hide();
 
         // add quick buttons to order machine control
         init_content_type_buttons();

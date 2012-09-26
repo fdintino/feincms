@@ -1,9 +1,12 @@
 {% load i18n %}
 {% load feincms_tags %}
 <div id="main_wrapper">
-    {% for region in original.template.regions %}
-        <div class="navi_tab" id="{{ region.key }}_tab">{{ region.title }}</div>
-    {% endfor %}
+    <ul class="nav nav-tabs">
+        {% for region in original.template.regions %}
+            <li{% if forloop.first %} class="active"{% endif %}><a href="#{{ region.key }}_body" data-toggle="tab">{{ region.title }}</a></li>
+            <!-- <div class="navi_tab" id="{{ region.key }}_tab">{{ region.title }}</div> -->
+        {% endfor %}        
+    </ul>
     <div id="main">
         {% for region in original.template.regions %}
         <div id="{{ region.key }}_body" class="panel">
@@ -20,7 +23,7 @@
 
             <div class="machine-control">
                 <div class="control-unit">
-                    <span>{% trans "Add new item" %}:</span> <br/>
+                    <span>{% trans "Add new item" %}:</span>
                     {% show_content_type_selection_widget region %}
                     <input type="button" class="order-machine-add-button button" value="Go" />
                 </div>
